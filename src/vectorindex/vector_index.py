@@ -1,12 +1,14 @@
+from huggingface_hub import hf_hub_download
 import torch
 import torch.nn as nn
 import hnswlib
 from pathlib import Path
 
 class VectorIndexEmbedding(nn.Module):
-    def __init__(self, index: hnswlib.Index, k: int):
+    def __init__(self, index: hnswlib.Index, k: int, ef: int):
         super().__init__()
         self.index = index
+        self.index.set_ef(ef)
         self.k, self.vocab_size, self.dim = k, index.element_count, index.dim
 
     def topk(self, x: torch.Tensor):
@@ -22,15 +24,23 @@ class VectorIndexEmbedding(nn.Module):
         return logits.view((x.shape[0], x.shape[1], self.vocab_size))
 
     @staticmethod
-    def from_file(path: str):
+    def from_pretrained(index_file, ef = None, k = None, repo_id = "martinloretzzz/vector-index-embedding") -> "VectorIndexEmbedding":
+        local_path = hf_hub_download(repo_id=repo_id, filename=index_file)
+        return VectorIndexEmbedding.from_file(local_path, ef=ef, k=k)
+
+    @staticmethod
+    def from_file(path: str, ef = None, k = None) -> "VectorIndexEmbedding":
         index_path = Path(path)
-        model_name, dim, M, ef_construction, ef, k = index_path.stem.split("-")
+        model_name, dim, M, ef_construction, ef_default, k_default = index_path.stem.split("-")
         pathx = str(index_path.absolute())
         index = hnswlib.Index(space='ip', dim=int(dim))
 
         index.load_index(str(index_path.absolute()))
+        
+        ef = ef if ef is not None else int(ef_default)
+        k = k if k is not None else int(k_default)
 
-        return VectorIndexEmbedding(index, int(k))
+        return VectorIndexEmbedding(index, k=k, ef=ef)
 
     @staticmethod
     def build_index(weight: torch.Tensor, k=50, M=32, ef=100, ef_construction=300, model_name: str = "model", save_path: str = "data"):

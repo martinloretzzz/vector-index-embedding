@@ -15,7 +15,8 @@ set_seed(42)
 weight = generator.model.lm_head.weight.detach().clone().float()
 # index_path = VectorIndexEmbedding.build_index(weight, k=50, M=32, ef=100, ef_construction=300, model_name="gpt2")
 
-generator.model.lm_head = VectorIndexEmbedding.from_file("./data/gpt2-768-32-50-100-50.index")
+# generator.model.lm_head = VectorIndexEmbedding.from_file("./data/gpt2-768-32-50-100-50.index")
+generator.model.lm_head = VectorIndexEmbedding.from_pretrained("gpt2-768-32-300-100-50.index")
 
 max_new_tokens=8
 num_repeat=2
