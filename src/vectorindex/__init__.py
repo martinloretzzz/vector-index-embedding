@@ -1,1 +1,1 @@
-from .vector_index import VectorIndexEmbedding
+from .vector_index import VectorIndexEmbedding, VectorIndexEmbeddingConfig

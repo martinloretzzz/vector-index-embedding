@@ -3,25 +3,50 @@ import torch
 import torch.nn as nn
 import hnswlib
 from pathlib import Path
+from dataclasses import dataclass, asdict
+import json
+
+@dataclass
+class VectorIndexEmbeddingConfig:
+    model_name: str
+    k: int
+    ef: int
+    M: int
+    ef_construction: int
+    special_tokens: list[int] | None = None
+    dim: int = -1 # set from weight in build_index
+    vocab_size: int = -1 # set from weight in build_index
+
 
 class VectorIndexEmbedding(nn.Module):
-    def __init__(self, index: hnswlib.Index, k: int, ef: int):
+    def __init__(self, config: VectorIndexEmbeddingConfig, index_path: str):
         super().__init__()
-        self.index = index
-        self.index.set_ef(ef)
-        self.k, self.vocab_size, self.dim = k, index.element_count, index.dim
+        self.config = config
+        self.index = hnswlib.Index(space='ip', dim=int(config.dim))
+        self.index.load_index(index_path)
+        self.index.set_ef(config.ef)
 
-    def topk(self, x: torch.Tensor):
-        indices, distances = self.index.knn_query(x.detach().cpu().float().numpy(), k=self.k)
+        if config.special_tokens is not None:
+            self.special_token_indices = torch.tensor(config.special_tokens, dtype=torch.long)
+            self.special_token_weight = torch.from_numpy(self.index.get_items(config.special_tokens, return_type="numpy"))
+
+    def topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        indices, distances = self.index.knn_query(x.detach().cpu().float().numpy(), k=self.config.k)
         return torch.from_numpy(1 - distances).to(torch.float32).to(x.device), torch.from_numpy(indices).to(torch.int64).to(x.device)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_flat = x.view(-1, x.shape[-1])
         distances, indices = self.topk(x_flat)
-   
-        logits = torch.full((x_flat.shape[0], self.vocab_size), float("-inf"), dtype=torch.float32, device=x.device)
-        logits.scatter_(-1, indices, distances)
-        return logits.view((x.shape[0], x.shape[1], self.vocab_size))
+
+
+        logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
+        logits.scatter_(-1, indices, distances.to(x.dtype))
+
+        if self.config.special_tokens is not None:
+            special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.dtype).T)
+            logits.scatter_(-1, self.special_token_indices.unsqueeze(0), special_token_distances.to(x.dtype))
+
+        return logits.view((x.shape[0], x.shape[1], self.config.vocab_size))
 
     @staticmethod
     def from_pretrained(index_file, ef = None, k = None, repo_id = "martinloretzzz/vector-index-embedding") -> "VectorIndexEmbedding":
@@ -31,28 +56,28 @@ class VectorIndexEmbedding(nn.Module):
     @staticmethod
     def from_file(path: str, ef = None, k = None) -> "VectorIndexEmbedding":
         index_path = Path(path)
-        model_name, dim, M, ef_construction, ef_default, k_default = index_path.stem.split("-")
-        pathx = str(index_path.absolute())
-        index = hnswlib.Index(space='ip', dim=int(dim))
+        with open(index_path.resolve().with_suffix(".json"), "r") as f:
+            config = VectorIndexEmbeddingConfig(**json.load(f))
 
-        index.load_index(str(index_path.absolute()))
-        
-        ef = ef if ef is not None else int(ef_default)
-        k = k if k is not None else int(k_default)
+        if k is not None: config.k = k
+        if ef is not None: config.ef = ef 
 
-        return VectorIndexEmbedding(index, k=k, ef=ef)
+        return VectorIndexEmbedding(config, index_path=str(index_path.absolute()))
 
     @staticmethod
-    def build_index(weight: torch.Tensor, k=50, M=32, ef=100, ef_construction=300, model_name: str = "model", save_path: str = "data"):
-        vocab_size, dim = weight.shape
-        index_file = Path(save_path) / Path(f"{model_name}-{dim}-{M}-{ef_construction}-{ef}-{k}.index") 
+    def build_index(weight: torch.Tensor, config: VectorIndexEmbeddingConfig, save_path: str = "data", seed=42):
+        config.vocab_size, config.dim = weight.shape
+        index_file = Path(save_path) / Path(f"{config.model_name}.index") 
         index_file.parent.mkdir(parents=True, exist_ok=True)
 
-        index = hnswlib.Index(space='ip', dim=dim)
-        index.init_index(max_elements=vocab_size, M=M, ef_construction=ef_construction, random_seed=42)
-        index.set_ef(ef)
+        index = hnswlib.Index(space='ip', dim=config.dim)
+        index.init_index(max_elements=config.vocab_size, M=config.M, ef_construction=config.ef_construction, random_seed=seed)
+        index.set_ef(config.ef)
         index.add_items(weight.numpy())
         index.save_index(str(index_file))
+
+        with open(index_file.resolve().with_suffix(".json"), "w") as f:
+            json.dump(asdict(config), f, indent=4)
 
         print(f"Index saved to {index_file}")
         return str(index_file)

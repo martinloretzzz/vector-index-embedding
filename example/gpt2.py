@@ -5,6 +5,7 @@ import hnswlib
 import os
 import timeit
 from vectorindex import VectorIndexEmbedding
+from vectorindex.vector_index import VectorIndexEmbeddingConfig
 
 model_name = "gpt2" # "meta-llama/Llama-3.2-1B" # "gpt2" # "meta-llama/Llama-3.2-1B" # "meta-llama/Llama-3.2-3B"
 generator = pipeline('text-generation', model=model_name, device="cpu")
@@ -13,10 +14,13 @@ eos_token_id = generator.tokenizer.eos_token_id
 set_seed(42)
 
 weight = generator.model.lm_head.weight.detach().clone().float()
-# index_path = VectorIndexEmbedding.build_index(weight, k=50, M=32, ef=100, ef_construction=300, model_name="gpt2")
+special_tokens = None
 
-# generator.model.lm_head = VectorIndexEmbedding.from_file("./data/gpt2-768-32-50-100-50.index")
-generator.model.lm_head = VectorIndexEmbedding.from_pretrained("gpt2-768-32-300-100-50.index")
+config = VectorIndexEmbeddingConfig(model_name="gpt2", k=50, M=32, ef=100, ef_construction=300, special_tokens=special_tokens)
+# VectorIndexEmbedding.build_index(weight, config)
+
+generator.model.lm_head = VectorIndexEmbedding.from_file("./data/gpt2.index")
+# generator.model.lm_head = VectorIndexEmbedding.from_pretrained("gpt2.index")
 
 max_new_tokens=8
 num_repeat=2
