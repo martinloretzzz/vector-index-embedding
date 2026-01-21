@@ -43,8 +43,8 @@ class VectorIndexEmbedding(nn.Module):
         logits.scatter_(-1, indices, distances.to(x.dtype))
 
         if self.config.special_tokens is not None:
-            special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.dtype).T)
-            logits.scatter_(-1, self.special_token_indices.unsqueeze(0), special_token_distances.to(x.dtype))
+            special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.dtype).to(x.device).T)
+            logits.scatter_(-1, self.special_token_indices.to(x.device).unsqueeze(0), special_token_distances)
 
         return logits.view((x.shape[0], x.shape[1], self.config.vocab_size))
 
@@ -73,7 +73,7 @@ class VectorIndexEmbedding(nn.Module):
         index = hnswlib.Index(space='ip', dim=config.dim)
         index.init_index(max_elements=config.vocab_size, M=config.M, ef_construction=config.ef_construction, random_seed=seed)
         index.set_ef(config.ef)
-        index.add_items(weight.numpy())
+        index.add_items(weight.cpu().numpy())
         index.save_index(str(index_file))
 
         with open(index_file.resolve().with_suffix(".json"), "w") as f:

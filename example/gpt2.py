@@ -14,9 +14,9 @@ eos_token_id = generator.tokenizer.eos_token_id
 set_seed(42)
 
 weight = generator.model.lm_head.weight.detach().clone().float()
-special_tokens = None
+special_tokens = list(generator.tokenizer.added_tokens_decoder.keys())
 
-config = VectorIndexEmbeddingConfig(model_name="gpt2", k=50, M=32, ef=100, ef_construction=300, special_tokens=special_tokens)
+config = VectorIndexEmbeddingConfig(model_name="gpt2", k=50, M=32, ef=100, ef_construction=500, special_tokens=special_tokens)
 # VectorIndexEmbedding.build_index(weight, config)
 
 generator.model.lm_head = VectorIndexEmbedding.from_file("./data/gpt2.index")
