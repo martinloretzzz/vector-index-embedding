@@ -35,9 +35,10 @@ class VectorIndexEmbedding(nn.Module):
         return torch.from_numpy(1 - distances).to(torch.float32).to(x.device), torch.from_numpy(indices).to(torch.int64).to(x.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # return torch.full((x.shape[0], x.shape[1], self.config.vocab_size), 0, dtype=x.dtype, device=x.device)
+
         x_flat = x.view(-1, x.shape[-1])
         distances, indices = self.topk(x_flat)
-
 
         logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
         logits.scatter_(-1, indices, distances.to(x.dtype))
@@ -81,3 +82,7 @@ class VectorIndexEmbedding(nn.Module):
 
         print(f"Index saved to {index_file}")
         return str(index_file)
+
+    @staticmethod
+    def get_index_name(hf_model_id: str):
+        return hf_model_id.lower().replace("/", "-").replace(".", "-")
