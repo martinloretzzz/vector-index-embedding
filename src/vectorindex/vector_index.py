@@ -50,14 +50,18 @@ class VectorIndexEmbedding(nn.Module):
         return logits.view((x.shape[0], x.shape[1], self.config.vocab_size))
 
     @staticmethod
-    def from_pretrained(index_file, ef = None, k = None, repo_id = "martinloretzzz/vector-index-embedding") -> "VectorIndexEmbedding":
-        local_path = hf_hub_download(repo_id=repo_id, filename=index_file)
-        return VectorIndexEmbedding.from_file(local_path, ef=ef, k=k)
+    def from_pretrained(model_id: str, ef = None, k = None, repo_id = "martinloretzzz/vector-index-embedding") -> "VectorIndexEmbedding":
+        index_name = VectorIndexEmbedding.get_index_name(model_id)
+        local_path = hf_hub_download(repo_id=repo_id, filename=f"{index_name}.index")
+        local_path_config = hf_hub_download(repo_id=repo_id, filename=f"{index_name}.json") 
+        return VectorIndexEmbedding.from_file(local_path, ef=ef, k=k, config_path=local_path_config)
 
     @staticmethod
-    def from_file(path: str, ef = None, k = None) -> "VectorIndexEmbedding":
+    def from_file(path: str, ef = None, k = None, config_path: str | None = None) -> "VectorIndexEmbedding":
         index_path = Path(path)
-        with open(index_path.resolve().with_suffix(".json"), "r") as f:
+        if config_path is None:
+            config_path = index_path.resolve().with_suffix(".json")
+        with open(config_path, "r") as f:
             config = VectorIndexEmbeddingConfig(**json.load(f))
 
         if k is not None: config.k = k
