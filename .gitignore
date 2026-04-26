@@ -4,4 +4,11 @@ data
 __pycache__
 result
 hf
+build
 *.log
+*.out
+outputs
+multirun
+trace.json
+*.png
+*.pdf
