@@ -1,0 +1,16 @@
+hydra:
+  sweeper:
+    params:
+      +model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B
+      # +model_id: Qwen/Qwen3-0.6B
+      +batch_size: 1,2,4,8,16,32
+      +is_ref: false,true
+
+ef: 200
+new_token_count: 128
+
+k: 50
+autorange_min_run_time: 10.0
+benchmark_lm_head_only: False
+sleep: 4.0
+prompt: "Who was Alan Turing?"
