@@ -1,5 +1,6 @@
 import json
 import time
+import gc
 import torch
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -43,7 +44,7 @@ def bench_full_model(cfg: DictConfig, pipe, num_threads):
 def performance_benchmark_model(cfg: DictConfig):
     index_id = VectorIndexEmbedding.get_index_name(cfg.model_id)
     pipe = pipeline("text-generation", model=cfg.model_id, device="cpu", dtype=torch.float32)
-
+    pipe.tokenizer.pad_token = pipe.tokenizer.eos_token
 
     pipe.model.lm_head.weight.data = pipe.model.lm_head.weight.data.float()
 
@@ -51,7 +52,7 @@ def performance_benchmark_model(cfg: DictConfig):
 
     if not cfg.is_ref:
         pipe.model.lm_head = VectorIndexEmbedding.from_file(Path(__file__).parent / f"../data/{index_id}.index", ef=cfg.ef, k=cfg.k)
-        pipe.model.lm_head.index.set_num_threads(num_threads)
+        pipe.model.lm_head.num_threads = num_threads
 
     if cfg.benchmark_lm_head_only:
         return bench_lm_head(cfg, pipe, num_threads)
@@ -90,6 +91,7 @@ def benchmark_app(cfg : DictConfig) -> None:
     with open(result_file, "w") as f:
         json.dump(results, f, indent=2)
 
+    gc.collect()
     if "sleep" in cfg:
         time.sleep(cfg.sleep)
 
