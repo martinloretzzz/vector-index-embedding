@@ -25,19 +25,20 @@ class VectorIndexEmbedding(nn.Module):
         self.index = hnswlib.Index(space='ip', dim=int(config.dim))
         self.index.load_index(index_path)
         self.index.set_ef(config.ef)
+        self.num_threads = -1
 
         if config.special_tokens is not None:
             self.special_token_indices = torch.tensor(config.special_tokens, dtype=torch.long)
             self.special_token_weight = torch.from_numpy(self.index.get_items(config.special_tokens, return_type="numpy"))
 
     def topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        indices, distances = self.index.knn_query(x.detach().cpu().float().numpy(), k=self.config.k)
-        return torch.from_numpy(1 - distances).to(torch.float32).to(x.device), torch.from_numpy(indices).to(torch.int64).to(x.device)
+        indices, distances = self.index.knn_query(x.float().numpy(), k=self.config.k, num_threads=self.num_threads)
+        return 1.0 - torch.from_numpy(distances).to(x.device), torch.from_numpy(indices).to(torch.int64)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # return torch.full((x.shape[0], x.shape[1], self.config.vocab_size), 0, dtype=x.dtype, device=x.device)
 
-        x_flat = x.view(-1, x.shape[-1])
+        x_flat = x.view(-1, x.shape[-1]).detach().cpu()
         distances, indices = self.topk(x_flat)
 
         logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
