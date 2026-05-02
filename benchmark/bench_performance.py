@@ -52,7 +52,6 @@ def performance_benchmark_model(cfg: DictConfig):
 
     if not cfg.is_ref:
         pipe.model.lm_head = VectorIndexEmbedding.from_file(Path(__file__).parent / f"../data/{index_id}.index", ef=cfg.ef, k=cfg.k)
-        pipe.model.lm_head.num_threads = num_threads
 
     if cfg.benchmark_lm_head_only:
         return bench_lm_head(cfg, pipe, num_threads)

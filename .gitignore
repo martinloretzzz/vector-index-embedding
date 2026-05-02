@@ -2,7 +2,6 @@ data
 .venv
 *.egg-info
 __pycache__
-result
 hf
 build
 *.log

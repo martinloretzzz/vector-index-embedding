@@ -51,6 +51,9 @@ class VectorIndexEmbedding(nn.Module):
 
         return logits.view((x.shape[0], x.shape[1], self.config.vocab_size))
 
+    def set_ef(self, ef: int):
+        self.index.set_ef(ef)
+
     @staticmethod
     def from_pretrained(model_id: str, ef = None, k = None, repo_id = "martinloretzzz/vector-index-embedding") -> "VectorIndexEmbedding":
         index_name = VectorIndexEmbedding.get_index_name(model_id)
