@@ -33,20 +33,21 @@ class VectorIndexEmbedding(nn.Module):
 
     def topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         indices, distances = self.index.knn_query(x.float().numpy(), k=self.config.k, num_threads=self.num_threads)
-        return 1.0 - torch.from_numpy(distances).to(x.device), torch.from_numpy(indices).to(torch.int64)
+        return 1.0 - torch.from_numpy(distances), torch.from_numpy(indices).to(torch.int64)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # return torch.full((x.shape[0], x.shape[1], self.config.vocab_size), 0, dtype=x.dtype, device=x.device)
 
-        x_flat = x.view(-1, x.shape[-1]).detach().cpu()
-        distances, indices = self.topk(x_flat)
+        x_flat = x.view(-1, x.shape[-1]).float()
+        distances, indices = self.topk(x_flat.detach().cpu())
 
         logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
-        logits.scatter_(-1, indices, distances.to(x.dtype))
+        logits.scatter_(-1, indices.to(x.device), distances.to(x.device).to(x.dtype))
 
         if self.config.special_tokens is not None:
-            special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.dtype).to(x.device).T)
-            logits.scatter_(-1, self.special_token_indices.to(x.device).unsqueeze(0), special_token_distances)
+            special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.device).T).to(x.dtype)
+            special_token_indices = self.special_token_indices.to(x.device).unsqueeze(0).expand(x_flat.shape[0], -1)
+            logits.scatter_(-1, special_token_indices, special_token_distances)
 
         return logits.view((x.shape[0], x.shape[1], self.config.vocab_size))
 

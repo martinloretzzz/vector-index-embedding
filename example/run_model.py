@@ -47,11 +47,11 @@ special_tokens.extend([pipe.tokenizer.vocab[t] for t in extra_tokens])
 
 model_name = VectorIndexEmbedding.get_index_name(model_id)
 if build_index:
-    config = VectorIndexEmbeddingConfig(model_name=model_name, k=50, M=32, ef=100, ef_construction=500, special_tokens=special_tokens)
+    config = VectorIndexEmbeddingConfig(model_name=model_name, k=50, M=32, ef=200, ef_construction=5000, special_tokens=special_tokens)
     VectorIndexEmbedding.build_index(weight, config)
 
 lm_head_ref = pipe.model.lm_head
-pipe.model.lm_head = VectorIndexEmbedding.from_file(f"./data/{model_name}.index", ef=100, k=50)
+pipe.model.lm_head = VectorIndexEmbedding.from_file(f"./data/{model_name}.index", ef=200, k=50)
 # pipe.model.lm_head = VectorIndexEmbedding.from_pretrained(f"{model_name}.index")
 
 
@@ -63,11 +63,11 @@ def timeit_wrapper(func):
     return out, t
 
 
-out, time_vec = timeit_wrapper(lambda: pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count))
+out, time_vec = timeit_wrapper(lambda: pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count, do_sample=False))
 text_vec = out[0]["generated_text"][1]["content"] if chat_model else out
 
 pipe.model.lm_head = lm_head_ref
-out, time_ref = timeit_wrapper(lambda: pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count))
+out, time_ref = timeit_wrapper(lambda: pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count, do_sample=False))
 text_ref = out[0]["generated_text"][1]["content"] if chat_model else out
 
 
