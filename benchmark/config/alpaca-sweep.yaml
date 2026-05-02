@@ -1,0 +1,20 @@
+hydra:
+  sweep:
+    subdir: ${model_id}-${ef}
+
+  sweeper:
+    params:
+      ++model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B
+      ++ef: 0,100,200 # ef=0 means ref
+
+model_id: Qwen/Qwen3-0.6B
+ef: 200
+
+k: 50
+select_first: null
+batch_size: 16
+greedy: False
+seed: null
+
+sleep: 4
+warmup: 2
