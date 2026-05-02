@@ -19,17 +19,22 @@ model_id = "google/gemma-3-1b-it"
 prompt = "Who was Alan Turing?"
 device = "cpu"
 new_token_count = 256
-build_index = True
+build_index = False
 add_tokenizer_special_tokens = True
 
 extra_tokens = []
 
+if "llama" in model_id:
+    extra_tokens = ["'s", 'Ġand', 'Ġ**', ',', 'Ġto', ':**']
+
 if "Qwen3" in model_id:
-    extra_tokens = ["\\n", "Ċ", "ĊĊ", ",", "."]
+    extra_tokens = ["\\n", "Ċ", "ĊĊ", ",", ".", "Ġ", "Ġor", "Ġto", "Ġand", "Ġa", "Ġof", "Ġ**"]
 
 if "google" in model_id:
+    extra_extra = ["-", "▁of", "▁and", "▁the", "▁to", "▁a", ".", "▁▁", ",", "'", '"', ":**", "▁**", "\n", '▁"']
     add_tokenizer_special_tokens = False
-    extra_tokens = ["<pad>", "<eos>", "<bos>", "<unk>", "<mask>", "[multimodal]", "<start_of_turn>", "<end_of_turn>"]
+    extra_tokens = [*extra_extra, "<pad>", "<eos>", "<bos>", "<unk>", "<mask>", "[multimodal]", "<start_of_turn>", "<end_of_turn>"]
+
 
 chat_model = model_id != "gpt2"
 if chat_model:
@@ -47,7 +52,7 @@ special_tokens.extend([pipe.tokenizer.vocab[t] for t in extra_tokens])
 
 model_name = VectorIndexEmbedding.get_index_name(model_id)
 if build_index:
-    config = VectorIndexEmbeddingConfig(model_name=model_name, k=50, M=32, ef=200, ef_construction=5000, special_tokens=special_tokens)
+    config = VectorIndexEmbeddingConfig(model_id=model_id, model_name=model_name, k=50, M=32, ef=200, ef_construction=5000, special_tokens=special_tokens)
     VectorIndexEmbedding.build_index(weight, config)
 
 lm_head_ref = pipe.model.lm_head

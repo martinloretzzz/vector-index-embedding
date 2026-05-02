@@ -16,7 +16,7 @@ class VectorIndexEmbeddingConfig:
     special_tokens: list[int] | None = None
     dim: int = -1 # set from weight in build_index
     vocab_size: int = -1 # set from weight in build_index
-
+    model_id: str | None = None
 
 class VectorIndexEmbedding(nn.Module):
     def __init__(self, config: VectorIndexEmbeddingConfig, index_path: str):
