@@ -4,6 +4,8 @@ data
 __pycache__
 hf
 build
+cache
+result-old
 *.log
 *.out
 outputs
