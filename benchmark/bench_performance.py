@@ -10,9 +10,6 @@ from vectorindex import VectorIndexEmbedding
 import torch.utils.benchmark as benchmark
 from torch.profiler import profile, ProfilerActivity, record_function
 
-torch.backends.mkldnn.enabled = False
-
-
 def bench_lm_head(cfg: DictConfig, pipe, num_threads):
     torch.manual_seed(42)
     tokenizer = pipe.tokenizer
@@ -73,10 +70,18 @@ def bench_lm_head_random(cfg: DictConfig, pipe, num_threads):
 
 
 def bench_full_model(cfg: DictConfig, pipe, num_threads):
-    prompt = [[{"role": "user", "content": cfg.prompt}] for _ in range(cfg.batch_size)]
+    prompt = [[{"role": "user", "content": cfg.prompts[i]}] for i in range(cfg.batch_size)]
+    prompt = pipe.tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
+
+    if cfg.compile:
+        pipe.model.generation_config.cache_implementation = "static"
+        pipe.model.forward = torch.compile(pipe.model.forward, mode="reduce-overhead", backend="inductor")
+
+        for i in range(cfg.warmup):
+            pipe(prompt, max_new_tokens=cfg.new_token_count, min_new_tokens=cfg.new_token_count, batch_size=cfg.batch_size, do_sample=False, eos_token_id=None, pad_token_id=None)
 
     timer = benchmark.Timer(
-        stmt='pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count, batch_size=batch_size)',
+        stmt='pipe(prompt, max_new_tokens=new_token_count, min_new_tokens=new_token_count, batch_size=batch_size, do_sample=False, eos_token_id=None, pad_token_id=None)',
         globals={'pipe': pipe, 'prompt': prompt, 'new_token_count': cfg.new_token_count, 'batch_size': cfg.batch_size},
         num_threads=num_threads
     )

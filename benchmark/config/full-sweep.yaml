@@ -1,9 +1,9 @@
 hydra:
   sweeper:
     params:
-      model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B
-      # model_id: Qwen/Qwen3-0.6B
-      batch_size: 1,2,4,8,16,32
+      model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct
+      # model_id: google/gemma-3-270m-it # Qwen/Qwen3-0.6B
+      batch_size: 1,2,4,8,16,32,64
       is_ref: false,true
 
 model_id: Qwen/Qwen3-0.6B
@@ -16,5 +16,71 @@ new_token_count: 128
 k: 50
 autorange_min_run_time: 120.0
 benchmark_lm_head_only: False
-sleep: 30.0
-prompt: "Who was Alan Turing?"
+compile: False
+warmup: 2
+sleep: 20.0
+prompts:
+- Who was Alan Turing?
+- What is light's speed?
+- What is DNA?
+- Who wrote Hamlet?
+- When did WWII end?
+- What is France's capital?
+- Who painted Mona Lisa?
+- Name the largest planet.
+- What is a CPU?
+- What is oxygen's number?
+- Name the tallest mountain.
+- Who discovered penicillin?
+- When did Rome fall?
+- Who was Julius Caesar?
+- What is water's formula?
+- Who was Yuri Gagarin?
+- What is a prime?
+- What is RAM?
+- Who is Thor?
+- Name a river.
+- Who wrote 1984?
+- What is life?
+- What is pi?
+- Who was Cleopatra?
+- Name a star.
+- What is time?
+- What is gold?
+- What is ice?
+- What is mass?
+- What is a quasar?
+- Who was Plato?
+- What is sand?
+- What is RNA?
+- Who wrote The Raven?
+- Name the largest ocean.
+- Who was JFK?
+- What is gold's symbol?
+- What is a light-year?
+- Who defined motion's laws?
+- What is Canada's capital?
+- Who painted Starry Night?
+- Name the deepest trench.
+- Who invented the lightbulb?
+- What is sound's speed?
+- Who was Joan of Arc?
+- Name the closest star.
+- Who wrote the Odyssey?
+- Name the largest desert.
+- Who founded Microsoft?
+- What is water's pH?
+- Who is Yoda?
+- What is Brazil's capital?
+- What is art?
+- Name the smallest bone.
+- Who wrote the Iliad?
+- What is Japan's currency?
+- Who was Marie Curie?
+- Name the largest mammal.
+- Who wrote Great Gatsby?
+- What is absolute zero?
+- Who was Aristotle?
+- What is iron's symbol?
+- What is fire?
+- What is Italy's capital?

@@ -32,14 +32,15 @@ class VectorIndexEmbedding(nn.Module):
             self.special_token_weight = torch.from_numpy(self.index.get_items(config.special_tokens, return_type="numpy"))
 
     def topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        indices, distances = self.index.knn_query(x.float().numpy(), k=self.config.k, num_threads=self.num_threads)
+        indices, distances = self.index.knn_query(x.detach().float().numpy(), k=self.config.k, num_threads=self.num_threads)
         return 1.0 - torch.from_numpy(distances), torch.from_numpy(indices).to(torch.int64)
 
+    @torch.compiler.disable
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # return torch.full((x.shape[0], x.shape[1], self.config.vocab_size), 0, dtype=x.dtype, device=x.device)
 
         x_flat = x.view(-1, x.shape[-1]).float()
-        distances, indices = self.topk(x_flat.detach().cpu())
+        distances, indices = self.topk(x_flat.cpu())
 
         logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
         logits.scatter_(-1, indices.to(x.device), distances.to(x.device).to(x.dtype))
