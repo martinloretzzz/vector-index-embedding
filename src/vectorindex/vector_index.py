@@ -5,6 +5,21 @@ import hnswlib
 from pathlib import Path
 from dataclasses import dataclass, asdict
 import json
+import ctypes
+
+# Custom op for torch compile support
+@torch.library.custom_op("hnsw::hnsw_topk", mutates_args=())
+def hnsw_topk(x: torch.Tensor, index_ptr: int, k: int, num_threads: int) -> tuple[torch.Tensor, torch.Tensor]:
+    index = ctypes.cast(index_ptr, ctypes.py_object).value
+    indices, distances = index.knn_query(x.detach().cpu().float().numpy(), k=k, num_threads=num_threads)
+    return (torch.from_numpy(distances).to(x.device), torch.from_numpy(indices).to(x.device).to(torch.long))
+
+@hnsw_topk.register_fake
+def hnsw_topk_fake(x: torch.Tensor, index_ptr: int, k: int, num_threads: int):
+    distances = torch.empty((x.shape[0], k), device=x.device)
+    indices = torch.empty((x.shape[0], k), dtype=torch.int64, device=x.device)
+    return (distances, indices)
+
 
 @dataclass
 class VectorIndexEmbeddingConfig:
@@ -31,19 +46,15 @@ class VectorIndexEmbedding(nn.Module):
             self.special_token_indices = torch.tensor(config.special_tokens, dtype=torch.long)
             self.special_token_weight = torch.from_numpy(self.index.get_items(config.special_tokens, return_type="numpy"))
 
-    def topk(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        indices, distances = self.index.knn_query(x.detach().float().numpy(), k=self.config.k, num_threads=self.num_threads)
-        return 1.0 - torch.from_numpy(distances), torch.from_numpy(indices).to(torch.int64)
-
-    @torch.compiler.disable
+    
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # return torch.full((x.shape[0], x.shape[1], self.config.vocab_size), 0, dtype=x.dtype, device=x.device)
 
         x_flat = x.view(-1, x.shape[-1]).float()
-        distances, indices = self.topk(x_flat.cpu())
+        distances, indices = hnsw_topk(x_flat, id(self.index), self.config.k, self.num_threads)
 
         logits = torch.full((x_flat.shape[0], self.config.vocab_size), float("-inf"), dtype=x.dtype, device=x.device)
-        logits.scatter_(-1, indices.to(x.device), distances.to(x.device).to(x.dtype))
+        logits.scatter_(-1, indices, distances.to(x.dtype))
 
         if self.config.special_tokens is not None:
             special_token_distances = torch.matmul(x_flat, self.special_token_weight.to(x.device).T).to(x.dtype)

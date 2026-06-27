@@ -11,5 +11,7 @@ result-old
 outputs
 multirun
 trace.json
+benchmark/*.json
 *.png
 *.pdf
+*.svg

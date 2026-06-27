@@ -1,8 +1,8 @@
 hydra:
   sweeper:
     params:
-      # model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B
-      model_id: meta-llama/Llama-3.2-3B-Instruct
+      model_id: google/gemma-3-270m-it,google/gemma-3-1b-it,meta-llama/Llama-3.2-1B-Instruct,meta-llama/Llama-3.2-3B-Instruct,Qwen/Qwen3-0.6B,Qwen/Qwen3-1.7B
+      # model_id: meta-llama/Llama-3.2-3B-Instruct
       ef: 200
       batch_size: 1,2,4,8,16,32,64
       is_ref: false,true
