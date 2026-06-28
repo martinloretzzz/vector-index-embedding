@@ -14,11 +14,11 @@ ef: 200
 new_token_count: 128
 
 k: 50
-autorange_min_run_time: 120.0
+autorange_min_run_time: 60.0
 benchmark_lm_head_only: False
-compile: False
+compile: True
 warmup: 2
-sleep: 20.0
+sleep: 8.0
 prompts:
 - Who was Alan Turing?
 - What is light's speed?
