@@ -49,7 +49,7 @@ pipe = pipeline("text-generation", model=model_id, device="cpu")
 pipe.model.lm_head = VectorIndexEmbedding.from_pretrained(model_id, ef=200)
 
 prompt = [{"role": "user", "content": "Who was Alan Turing?"}]
-out = pipe(prompt, do_sample=False)
+out = pipe(prompt)
 print(out[0]["generated_text"][-1]["content"])
 ```
 
