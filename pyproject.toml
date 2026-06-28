@@ -3,8 +3,19 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vectorindex"
+name = "vector-index-embedding"
 version = "0.1.0"
 requires-python = ">=3.9"
+authors = [
+  { name="Martin Loretz", email="pypi@martinloretz.com" },
+]
+description = "HNSW based output embeddings for LLM's"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
 
-dependencies = ["torch", "hnswlib", "transformers", "lm_eval"]
+# hnswlib-fast-ip
+dependencies = ["torch", "hnswlib", "huggingface_hub"]
