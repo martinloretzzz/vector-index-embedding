@@ -2,7 +2,7 @@
 
 ## Paper
 
-[Arxiv Link (online soon)]()
+[Paper Link](https://openreview.net/pdf/28f3b41d4527b14e28335e543455468d08e1b1d6.pdf)
 
 ### Abstract
 
